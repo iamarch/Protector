@@ -8,15 +8,15 @@ services:
       - mongo
     restart: on-failure
     environment:
-      DB_URI: 'mongodb://protector:protector@mongo'
+      DB_URI: 'mongodb://Kunaldiwan:kunaldiwan@mongo'
 
   mongo:
     image: 'mongo:latest'
     volumes:
       - 'mongo_protector:/data/db'
     environment:
-      MONGO_INITDB_ROOT_USERNAME: protector
-      MONGO_INITDB_ROOT_PASSWORD: protector
+      MONGO_INITDB_ROOT_USERNAME: Kunaldiwan
+      MONGO_INITDB_ROOT_PASSWORD: kunaldiwan
 
 volumes:
-  mongo_protector:
+  mongo_kunaldiwan:
