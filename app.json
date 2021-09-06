@@ -1,0 +1,54 @@
+{
+  "name": "Protector",
+  "description": "The Powerful Telegram Group Management Bot.",
+  "keywords": ["telegram", "group", "protector", "python"
+  ],
+  "repository": "https://github.com/Kunal-Diwan/Protector",
+  "logo": "https://telegra.ph/file/8919c5895ffc01a25b5b8.jpg",
+  "stack": "container",
+  "env": {
+    "API_ID": {
+      "description": "your app id from my.telegra,.org",
+      "required": true,
+      "value": ""
+    },
+    "API_HASH": {
+      "description": "your api hash from my.telegram.org",
+      "required": true,
+      "value": ""
+    },
+    "BOT_TOKEN": {
+      "description": "bot token generated from https://t.me/botfather",
+      "required": true,
+      "value": ""
+    },
+    "OWNER_ID": {
+      "description": "your telegram id as the owner of this bot",
+      "required": true,
+      "value": ""
+    },
+    "DB_URI": {
+      "description": "mongodb url from https://cloud.mongodb.com/",
+      "required": true,
+      "value": ""
+    },
+    "DOWNLOAD_PATH": {
+      "description": "set path to download directory",
+      "value": "./downloads/"
+    },
+    "SW_API": {
+      "description": "spamwatch API",
+      "value": ""
+    },
+    "LOG_CHANNEL": {
+      "description": "for bot log, fill with channel id or username",
+      "required": true,
+      "value": "0"
+    },
+    "LOG_LEVEL": {
+      "description": "logging level of this bot, Avaliable level [CRITICAL, ERROR, WARNING, INFO, DEBUG]",
+      "required": false,
+      "value": ""
+    }
+  }
+}
