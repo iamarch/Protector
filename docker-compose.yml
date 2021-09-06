@@ -1,0 +1,22 @@
+version: '3.7'
+
+services:
+  anjani:
+    build:
+      context: .
+    depends_on:
+      - mongo
+    restart: on-failure
+    environment:
+      DB_URI: 'mongodb://protector:protector@mongo'
+
+  mongo:
+    image: 'mongo:latest'
+    volumes:
+      - 'mongo_protector:/data/db'
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: protector
+      MONGO_INITDB_ROOT_PASSWORD: mypasswd
+
+volumes:
+  mongo_protector:
