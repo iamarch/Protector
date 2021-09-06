@@ -16,7 +16,7 @@ services:
       - 'mongo_protector:/data/db'
     environment:
       MONGO_INITDB_ROOT_USERNAME: protector
-      MONGO_INITDB_ROOT_PASSWORD: mypasswd
+      MONGO_INITDB_ROOT_PASSWORD: protector
 
 volumes:
   mongo_protector:
