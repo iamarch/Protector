@@ -1,12 +1,12 @@
 [tool.poetry]
-name = "ProtectorRoBot"
+name = "Protector"
 version = "1.3.3"
 description = "Telegram group management bot made with Python"
 license = "AGPL-3.0-or-later"
 authors = ["Kunal-Diwan"]
 readme = "README.md"
-homepage = "https://github.com/Kunal-Diwan/ProtectorRoBot#readme"
-repository = "https://github.com/Kunal-Diwan/ProtectorRoBot"
+homepage = "https://github.com/Kunal-Diwan/Protector#readme"
+repository = "https://github.com/Kunal-Diwan/Protector"
 documentation = "https://TheProtector.tk"
 keywords = ["chatbot", "bot", "python", "protector", "pyrogram"]
 classifiers = [
