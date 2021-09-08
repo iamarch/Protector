@@ -1,115 +1,55 @@
-import codecs
+# Protector (A telegram bot project)
+# Copyright (C) 2021 - Kunaldiwan All rights reserved. Source code available under the AGPL.
+
+# This file is part of Protector.
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>
+
 import inspect
 import logging
 import os.path
-from functools import wraps
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Optional
-
-from Protector import util
+from typing import TYPE_CHECKING, ClassVar, Optional
 
 if TYPE_CHECKING:
     from .core import Protector
 
 
-def loop_safe(func: Callable[..., str]):  # Let default typing choose the return type
-    """ Decorator for text methods """
-
-    @wraps(func)
-    async def wrapper(
-        self: "Plugin",
-        chat_id: int,
-        text_name: str,
-        *args: Any,
-        noformat: bool = False,
-        **kwargs: Any
-    ) -> str:
-        return await util.run_sync(
-            func,
-            self,
-            chat_id,
-            text_name,
-            *args,
-            noformat=noformat,
-            **kwargs
-        )
-
-    return wrapper
-
-
 class Plugin:
+    """Plugins extender"""
+
     # Class variables
     name: ClassVar[str] = "Unnamed"
     disabled: ClassVar[bool] = False
-    helpable: ClassVar[bool] = False
 
     # Instance variables
     bot: "Protector"
     log: logging.Logger
     comment: Optional[str]
 
-    def __init__(self, bot: "Protector") -> None:
+    def __init__(self, bot) -> None:
         self.bot = bot
         self.log = logging.getLogger(type(self).name.lower().replace(" ", "_"))
         self.comment = None
 
-    @loop_safe
-    def text(
-        self,
-        chat_id: int,
-        text_name: str,
-        *args: Any,
-        noformat: bool = False,
-        **kwargs: Any
-    ) -> str:
-        """Parse the string with user language setting.
-        Parameters:
-            chat_id (`int`):
-                Id of the sender(PM's) or chat_id to fetch the user language setting.
-            text_name (`str`):
-                String name to parse. The string is parsed from YAML documents.
-            *args (`any`, *Optional*):
-                One or more values that should be formatted and inserted in the string.
-                The value should be in order based on the language string placeholder.
-            noformat (`bool`, *Optional*):
-                If exist and True, the text returned will not be formated.
-                Default to False.
-            **kwargs (`any`, *Optional*):
-                One or more keyword values that should be formatted and inserted in the string.
-                based on the keyword on the language strings.
-        """
-        def get_text(lang_code: str) -> str:
-            try:
-                text = codecs.decode(
-                    codecs.encode(
-                        self.bot.languages[lang_code][text_name],
-                        "latin-1",
-                        "backslashreplace"
-                    ),
-                    "unicode-escape",
-                )
-            except KeyError:
-                if lang_code == "en":
-                    return (
-                        f"**NO LANGUAGE STRING FOR '{text_name}' in '{lang_code}'**\n"
-                        "__Please forward this to__ @ProtectorNews"
-                    )
-
-                self.bot.log.warning("NO LANGUAGE STRING FOR '%s' in '%s'", text_name, lang_code)
-                return get_text("en")
-            else:
-                try:
-                    return text if noformat else text.format(*args, **kwargs)
-                except (IndexError, KeyError):
-                    self.bot.log.error("Failed to format '%s' string on '%s'", text_name, lang_code)
-                    raise
-
-        data = self.bot.chats_languages.get(chat_id, "en")
-        return get_text(data)
-
     @classmethod
     def format_desc(cls, comment: Optional[str] = None):
+        """plugin description"""
         _comment = comment + " " if comment else ""
-        return f"{_comment}plugin '{cls.name}' ({cls.__name__}) from '{os.path.relpath(inspect.getfile(cls))}'"
+        return (
+            f"{_comment}plugin {cls.name} ({cls.__name__}) "
+            f"from {os.path.relpath(inspect.getfile(cls))}"
+        )
 
     def __repr__(self):
-        return "<" + self.format_desc(self.comment) + ">"
+        return f"<{self.format_desc(self.comment)}>"
