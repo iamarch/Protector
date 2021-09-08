@@ -38,7 +38,7 @@ class PluginExtender(Base):
 
     plugins: MutableMapping[str, plugin.Plugin]
 
-    def __init__(self: "Anjani", **kwargs: Any) -> None:
+    def __init__(self: "Protector", **kwargs: Any) -> None:
         self.plugins = {}
 
         super().__init__(**kwargs)
