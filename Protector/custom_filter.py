@@ -1,129 +1,142 @@
-from typing import Any, Callable, Coroutine
+"""Bot custom filters"""
+# Protector (A telegram bot project)
+# Copyright (C) 2021 - Kunaldiwan All rights reserved. Source code available under the AGPL.
 
-from pyrogram import Client
-from pyrogram.filters import Filter
+# This file is part of Protector.
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+import logging
+import re
+import shlex
+from typing import List, Union
+
+from pyrogram.errors import ChannelPrivate
+from pyrogram.filters import create
 from pyrogram.types import Message
 
-from Protector.util.tg import fetch_permissions, is_staff_or_admin
-from Protector.util.types import CustomFilter
+from .utils import adminlist
 
-FilterFunc = Callable[[CustomFilter, Client, Message],
-                      Coroutine[Any, Any, bool]]
+LOGGER = logging.getLogger(__name__)
 
 
-def create(func: FilterFunc, name: str = None, **kwargs: Any) -> CustomFilter:
-    return type(
-        name or func.__name__ or "CustomAnjaniFilter",
-        (CustomFilter,),
-        {"__call__": func, **kwargs}
-    )()
+def command(commands: Union[str, List[str]], case_sensitive: bool = False):
+    """Build a command that accept bot username eg: /start@TheProtectorRoBot"""
 
+    async def func(flt, client, message: Message):
+        text: str = message.text or message.caption
+        message.command: List[str] = []
 
-# { staff_only
-def _staff_only(include_bot: bool = True) -> CustomFilter:
-
-    async def func(flt: CustomFilter, _: Client, message: Message) -> bool:
-        user = message.from_user
-        return user.id in flt.anjani.staff
-
-    return create(func, "staff_only", include_bot=include_bot)
-
-staff_only = _staff_only()
-# }
-
-
-# { owner_only
-def _owner_only(include_bot: bool = True) -> CustomFilter:
-
-    async def func(flt: CustomFilter, _: Client, message: Message) -> bool:
-        user = message.from_user
-        return user.id == flt.anjani.owner
-
-    return create(func, "owner_only", include_bot=include_bot)
-
-owner_only = _owner_only()
-# }
-
-
-# { permission
-async def _can_delete(_: Filter, client: Client, message: Message) -> bool:
-    if message.chat.type == "private":
-        return False
-
-    bot, member = await fetch_permissions(client, message.chat.id,
-                                          message.from_user.id)
-    return bot.can_delete_messages and member.can_delete_messages
-
-
-async def _can_change_info(_: Filter, client: Client, message: Message) -> bool:
-    if message.chat.type == "private":
-        return False
-
-    bot, member = await fetch_permissions(client, message.chat.id,
-                                          message.from_user.id)
-    return bot.can_change_info and member.can_change_info
-
-
-async def _can_invite(_: Filter, client: Client, message: Message) -> bool:
-    if message.chat.type == "private":
-        return False
-
-    bot, member = await fetch_permissions(client, message.chat.id,
-                                          message.from_user.id)
-    return bot.can_invite_users and member.can_invite_users
-
-
-async def _can_pin(_: Filter, client: Client, message: Message) -> bool:
-    if message.chat.type == "private":
-        return False
-
-    bot, member = await fetch_permissions(client, message.chat.id,
-                                          message.from_user.id)
-    return bot.can_pin_messages and member.can_pin_messages
-
-
-async def _can_promote(_: Filter, client: Client, message: Message) -> bool:
-    if message.chat.type == "private":
-        return False
-
-    bot, member = await fetch_permissions(client, message.chat.id,
-                                          message.from_user.id)
-    return bot.can_promote_members and member.can_promote_members
-
-
-async def _can_restrict(_: Filter, client: Client, message: Message) -> bool:
-    if message.chat.type == "private":
-        return False
-
-    bot, member = await fetch_permissions(client, message.chat.id,
-                                          message.from_user.id)
-    return bot.can_restrict_members and member.can_restrict_members
-
-
-can_delete = create(_can_delete, "can_delete")
-can_change_info = create(_can_change_info, "can_change_info")
-can_invite = create(_can_invite, "can_invite")
-can_pin = create(_can_pin, "can_pin")
-can_promote = create(_can_promote, "can_promote")
-can_restrict = create(_can_restrict, "can_restrict")
-# }
-
-
-# { admin_only
-def _admin_only(include_bot: bool = True) -> CustomFilter:
-
-    async def func(flt: CustomFilter, client: Client, message: Message) -> bool:
-        if message.chat.type == "private":
+        if not text:
             return False
 
-        user = message.from_user
-        bot, member = await fetch_permissions(client, message.chat.id, user.id)
-        return (
-            bot.status == "administrator" and
-            is_staff_or_admin(member, flt.anjani.staff)
+        regex = r"^/(\w+)(@{username})?(?: |$)(.*)".format(username=client.__bot__.username)
+        matches = re.compile(regex).search(text)
+
+        if matches:
+            if matches.group(1) not in flt.commands:
+                return False
+            if matches.group(3) == "":
+                return True
+            try:
+                for arg in shlex.split(matches.group(3)):
+                    message.command.append(arg)
+            except ValueError:
+                pass
+            return True
+        return False
+
+    commands = commands if isinstance(commands, list) else [commands]
+    commands = {c if case_sensitive else c.lower() for c in commands}
+
+    return create(func, "CustomCommandFilter", commands=commands, case_sensitive=case_sensitive)
+
+
+async def _admin_filters(_, client, message: Message) -> bool:
+    if message.chat.type != "private":
+        chat_id = message.chat.id
+        user_id = message.from_user.id
+        return bool(
+            user_id in [i async for i in adminlist(client, chat_id)]
+            or user_id in client.__bot__.staff_id
         )
+    return False
 
-    return create(func, "admin_only", include_bot=include_bot)
 
-admin_only = _admin_only()
-# }
+async def _bot_admin_filters(_, client, message: Message) -> bool:
+    if message.chat.type != "private":
+        bot = await client.get_chat_member(message.chat.id, "me")
+        if bot.status == "administrator":
+            return True
+        await message.reply_text("I'm not an admin")
+    return False
+
+
+async def _staff_filters(_, client, message: Message) -> bool:
+    user_id = message.from_user.id
+    return bool(user_id in client.__bot__.staff_id)
+
+
+async def staff_rank(flt, client, message: Message) -> bool:
+    """Check staff rank"""
+    user_id = message.from_user.id
+    if flt.rank == "owner":
+        return bool(user_id == client.__bot__.staff.get("owner"))
+    if flt.rank == "dev":
+        return bool(
+            user_id in client.__bot__.staff.get("dev")
+            or user_id == client.__bot__.staff.get("owner")
+        )
+    LOGGER.error(f"Unknown rank '{flt.rank}'! Avalaible rank ['owner', 'dev']")
+    return False
+
+
+async def check_perm(flt, client, message: Message) -> bool:
+    """Check user and bot permission"""
+    chat_id = message.chat.id
+    # Check Chat type first
+    if message.chat.type == "private":
+        await message.reply_text(await client.__bot__.text(chat_id, "err-chat-groups"))
+        return False
+    try:
+        bot = await client.get_chat_member(chat_id, "me")
+        user = await client.get_chat_member(chat_id, message.from_user.id)
+    except (ChannelPrivate, AttributeError) as err:
+        LOGGER.warning(f"Failed getting chat member of:\n{message}\n{err}")
+        return False
+    perm = True
+
+    if flt.can_change_info and not (bot.can_change_info and user.can_change_info):
+        perm = False
+    elif flt.can_delete and not (bot.can_delete_messages and user.can_delete_messages):
+        perm = False
+    elif flt.can_restrict and not (
+        bot.can_restrict_members and (user.can_restrict_members or user in client.__bot__.staff_id)
+    ):
+        perm = False
+    elif flt.can_invite_users and not (bot.can_invite_users and user.can_invite_users):
+        perm = False
+    elif flt.can_pin and not (bot.can_pin_messages and user.can_pin_messages):
+        perm = False
+    elif flt.can_promote and not (
+        bot.can_promote_members and (user.can_promote_members or user in client.__bot__.staff_id)
+    ):
+        perm = False
+
+    return perm
+
+
+admin = create(_admin_filters)
+bot_admin = create(_bot_admin_filters)
+staff = create(_staff_filters)
