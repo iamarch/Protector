@@ -1,13 +1,12 @@
 aiohttp
 aiorun
-aiopath
 colorlog
+covid
 dnspython
-meval
-pymongo
+motor
 pyrogram
 python-dotenv
 PyYAML
+spamwatch
 tgcrypto
 toml
-scikit-learn==0.24.2
